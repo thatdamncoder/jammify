@@ -1,5 +1,6 @@
 import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+import { prismaClient } from "./db";
 
 export const authOptions: NextAuthOptions = {
     providers: [
@@ -8,17 +9,23 @@ export const authOptions: NextAuthOptions = {
             clientSecret: process.env.GOOGLE_CLIENT_SECRET!
           })
     ],
-    // callbacks: {
-    //     async jwt({token, user}){
-    //         return token;
-    //     },
-    //     async session({session, token}){
-    //         if(session.user._id){
-    //             token._id = session.user._id;
-    //         } 
-    //         return session;
-    //     }
-    // },
+    callbacks: {
+        async signIn(params){
+            if (!params.user.email){
+                return false;
+            }
+            try{
+                await prismaClient.user.create({
+                    data:{
+                        email: params.user.email,
+                        provider: "Google"
+                    }   
+                });
+            } catch(error){
+            }
+            return true;
+        }
+    },
     // pages: {
     //     signIn: "/login",
     //     error: "/login"
