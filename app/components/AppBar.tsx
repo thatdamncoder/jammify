@@ -6,10 +6,10 @@ export const AppBar = () => {
     const isLoading = status === "loading";
 
     return (
-        <div className="flex flex-col justify-center h-screen w-screen">
-            <div className="flex flex-1 flex-row items-center justify-center">
-                <div className="m-2 p-2 bg-violet-400">
-                    <h1 className="text-white font-bold text-lg">Welcome to Muzi</h1>
+        <div>
+            <div className="flex flex-1 flex-row items-center justify-between">
+                <div className="m-2 p-2">
+                    <h1 className="text-white font-bold text-3xl">Muzi</h1>
                 </div>
                 <div >
                     {
