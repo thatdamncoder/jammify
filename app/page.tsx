@@ -1,19 +1,14 @@
-import Image from "next/image";
 import { AppBar } from "./components/AppBar";
-import { Dashboard } from "./components/Dashboard";
-import { SearchBar } from "./components/SearchBar";
-import MusicApp from "./components/v0dev";
+import { Redirect } from "./components/Redirect";
 
 export default function Home() {
   return (
-    // <div className="w-full h-full text-white backdrop-blur-3xl shadow-md">
-    //   <AppBar />
-    //   <div className="mx-30">
-    //     <SearchBar />
-    //     <Dashboard />
-    //   </div>
-      
-    // </div>
-    <div><MusicApp /></div>
+    <>
+    <Redirect />
+    <div className="flex flex-col h-screen bg-black text-white items-center justify-center gap-5">
+        <p className="text-9xl font-bold">muzi</p>
+        <AppBar />
+    </div>
+    </>
   );
 }

@@ -1,11 +1,13 @@
 "use client"
 
-import { Search, ChevronDown, MoreVertical, PlusCircle, Music, ArrowRightFromLine, ChevronUp } from "lucide-react"
+import { Search, ChevronDown, MoreVertical, PlusCircle, Music, ArrowRightFromLine, ChevronUp, House, LogOut } from "lucide-react"
+import { signOut } from "next-auth/react";
 import Image from "next/image"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 const YOUTUBE_EMBED_BASE_URL = "https://www.youtube.com/embed/";
 const DEFAULT_PLAYING_ID = "dQw4w9WgXcQ";
+const REFRESH_INTERVAL_MS = 10 * 1000;
 
 export default function MusicApp() {
   // State for tracks with upvotes/downvotes
@@ -13,30 +15,54 @@ export default function MusicApp() {
   const [likedTracks, setLikedTracks] = useState(likedTracksList);
   const [currentPlaying, setCurrentPlaying] = useState(DEFAULT_PLAYING_ID);
 
+  async function refreshStreams(){
+    const res = await fetch("/api/streams/my");
+    console.log(res);
+  }
+  useEffect(() => {
+    refreshStreams();
+    setTimeout(() => {
+
+    }, REFRESH_INTERVAL_MS);
+  }, []);
+
+
+
   // Handle upvote
   const handleUpvote = (id: number) => {
     const likedTrack = tracks.find((track) => track.id === id);
-    if (likedTrack) {
+    const isAlreadyLiked = likedTracks.find((track) => track.id === id);
+    if (likedTrack && !isAlreadyLiked) {
       const { id: likedId, title: likedTitle, image: likedImage} : {id: number, title: string, image: string} = likedTrack;
+      
       setLikedTracks((prevLiked) => (
         [{id: likedId, title: likedTitle, image: likedImage}, ...prevLiked]
       ));
-    }
 
-    setTracks(
-      tracks
-        .map((track) => (track.id === id ? { ...track, upvotes: track.upvotes + 1 } : track))
-        .sort((a, b) => b.upvotes - a.upvotes),
-    )
+      setTracks(
+        tracks
+          .map((track) => (track.id === id ? { ...track, upvotes: track.upvotes + 1, hasLiked: 1 } : track))
+          .sort((a, b) => b.upvotes - a.upvotes),
+      )
+    }
   }
 
   // Handle downvote
   const handleDownvote = (id: number) => {
-    setTracks(
-      tracks
-        .map((track) => (track.id === id ? { ...track, downvotes: track.downvotes + 1 } : track))
-        .sort((a, b) => b.upvotes - a.upvotes),
-    )
+    const dislikedTrack = tracks.find((track) => track.id === id);
+    const isLiked = likedTracks.find((track) => track.id === id);
+    if (dislikedTrack && isLiked) {
+      
+      setLikedTracks((prevLiked) => (
+        prevLiked.filter((track) => track.id !== id)
+      ));
+
+      setTracks(
+        tracks
+          .map((track) => (track.id === id ? { ...track, upvotes: track.upvotes - 1, hasLiked: 0 } : track))
+          .sort((a, b) => b.upvotes - a.upvotes),
+      )
+    }
   }
 
   
@@ -44,8 +70,9 @@ export default function MusicApp() {
     const {url : nextToBePlayed} = tracks[0];
     const extracted_id = nextToBePlayed.split("v=?")[1];
     setTracks((prev) => {
-      prev.shift();
-      return prev;
+      const copy = [... prev];
+      copy.shift();
+      return copy;
     });
     setCurrentPlaying(extracted_id);
   }
@@ -58,9 +85,18 @@ export default function MusicApp() {
         <div className="flex-1 overflow-y-auto p-6 bg-zinc-950">
           {/* Header */}
           <div className="flex items-center mb-6">
-            <div className="flex items-center gap-2">
-              <div className="w-5 h-5 bg-white rounded-full"></div>
-              <h1 className="text-xl font-semibold">muzi</h1>
+            <div className="flex flex-row justify-between items-center w-full">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 bg-white rounded-full"></div>
+                <h1 className="text-xl font-semibold">muzi</h1>
+              </div>
+              <LogOut 
+                onClick={async () => {
+                  await signOut({callbackUrl: "/"});
+                }}
+                size={21}
+              />
+
             </div>
           </div>
 
@@ -94,9 +130,8 @@ export default function MusicApp() {
 
           {/* Table header */}
           <div className="grid grid-cols-12 text-xs text-zinc-500 uppercase mb-2 px-2">
-            <div className="col-span-5">TITLES ({initialTracks.length}+)</div>
+            <div className="col-span-7">TITLES ({initialTracks.length}+)</div>
             <div className="col-span-2 text-center">UPVOTES</div>
-            <div className="col-span-2 text-center">DOWNVOTES</div>
             <div className="col-span-2 text-center">DURATION</div>
             <div className="col-span-1 text-center">PLATFORM</div>
           </div>
@@ -108,7 +143,7 @@ export default function MusicApp() {
                 key={track.id}
                 className="grid grid-cols-12 items-center py-2 px-2 rounded-md hover:bg-zinc-900/50 group"
               >
-                <div className="col-span-5 flex items-center gap-3">
+                <div className="col-span-7 flex items-center gap-3">
                   <div className="relative w-10 h-10 rounded overflow-hidden">
                     <Image
                       src={track.image || "/placeholder.png"}
@@ -123,24 +158,30 @@ export default function MusicApp() {
                     {track.subtitle && <div className="text-xs text-zinc-500">{track.subtitle}</div>}
                   </div>
                 </div>
-                <div className="col-span-2 text-center">
-                  <button
-                    onClick={() => handleUpvote(track.id)}
-                    className="flex items-center justify-center gap-1 mx-auto hover:bg-zinc-800 p-1 rounded"
-                  >
-                    <ChevronUp className="h-4 w-4 text-zinc-400" />
-                    <span className="text-sm text-zinc-400">{track.upvotes}</span>
-                  </button>
-                </div>
-                <div className="col-span-2 text-center">
-                  <button
-                    onClick={() => handleDownvote(track.id)}
-                    className="flex items-center justify-center gap-1 mx-auto hover:bg-zinc-800 p-1 rounded"
-                  >
-                    <ChevronDown className="h-4 w-4 text-zinc-400" />
-                    <span className="text-sm text-zinc-400 text-center">{track.downvotes}</span>
-                  </button>
-                </div>
+                {
+                  track.hasLiked === 0 && 
+                    <div className="col-span-2 text-center">
+                      <button
+                        onClick={() => handleUpvote(track.id)}
+                        className="flex items-center justify-center gap-1 mx-auto hover:bg-zinc-800 p-1 rounded"
+                      >
+                        <ChevronUp className="h-4 w-4 text-zinc-400" />
+                        <span className="text-sm text-zinc-400">{track.upvotes}</span>
+                      </button>
+                    </div>
+                }     
+                {
+                  track.hasLiked === 1 && 
+                    <div className="col-span-2 text-center">
+                      <button
+                        onClick={() => handleDownvote(track.id)}
+                        className="flex items-center justify-center gap-1 mx-auto bg-zinc-800 p-1 rounded "
+                      >
+                        <ChevronDown className="h-4 w-4 text-zinc-400" />
+                        <span className="text-sm text-zinc-400">{track.upvotes}</span>
+                      </button>
+                    </div>
+                } 
                 <div className="col-span-2 text-sm text-zinc-400 text-center">{track.duration}</div>
                 <div className="col-span-1 text-sm text-zinc-400 text-center">{<Music />}</div>
               </div>
@@ -215,8 +256,8 @@ const initialTracks = [
     subtitle: "3",
     image: "/placeholder.png?height=40&width=40",
     upvotes: 2,
-    downvotes: 1,
     duration: "00:57",
+    hasLiked: 0,
     url: "https://www.youtube.com/watch?v=DQdB7wFEygo"
   },
   {
@@ -225,18 +266,18 @@ const initialTracks = [
     subtitle: "3",
     image: "/placeholder.png?height=40&width=40",
     upvotes: 2,
-    downvotes: 1,
     duration: "00:57",
+    hasLiked: 0,
     url: "https://www.youtube.com/watch?v=WCpimlH0Kck"
   },
   {
-    id: 2,
+    id: 3,
     title: "Awesome Song 2",
     subtitle: "3",
     image: "/placeholder.png?height=40&width=40",
     upvotes: 2,
-    downvotes: 1,
     duration: "00:57",
+    hasLiked: 0,
     url: "https://www.youtube.com/watch?v=NwZ26lxl8wU"
   }
 ]

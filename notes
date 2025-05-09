@@ -1,0 +1,15 @@
+without web sockets-  
+after a request and a response, connection closes and neither of the parties can send 
+any requests or updates to each other
+POLLING - to keep up to date, like in a chat app, send request every 1 second, say to ask for any updates to the server 
+client     -->     server
+client     <--     server
+client  --close--  server
+
+
+with web sockets- bidirectional communication. client and server can send requests or updates to each other
+NO POLLING REQUIRED
+client     ->(http+ws request to upgrade http to websocket) server
+client     <--     server
+client  --will not close until client closes it--  server
+
