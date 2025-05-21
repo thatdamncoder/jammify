@@ -13,3 +13,5 @@ client     ->(http+ws request to upgrade http to websocket) server
 client     <--     server
 client  --will not close until client closes it--  server
 
+docker exec -it vibrant_black psql -U postgres -d muziapp
+

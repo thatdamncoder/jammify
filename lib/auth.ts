@@ -25,14 +25,33 @@ export const authOptions: NextAuthOptions = {
             } catch(error){
             }
             return true;
+        },
+        async jwt({user, token}) {
+            if (user?.email) {
+                const dbUser = await prismaClient.user.findUnique({
+                    where: {
+                        email: user.email
+                    }
+                });
+
+                if (dbUser) {
+                    token._id = dbUser.id;
+                }
+            }
+            return token;
+        },
+        async session({session, token}){
+            if(session.user && token._id){
+                session.user._id = token._id as string;
+            }
+            return session;
         }
     },
     // pages: {
     //     signIn: "/login",
     //     error: "/login"
     // },
-    // session:{
-    //     strategy: "jwt",
-    //     maxAge: 10 * 24 * 60 * 60
-    // }
+    session:{
+        strategy: "jwt"
+    }
 }

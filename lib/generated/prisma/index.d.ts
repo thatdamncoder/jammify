@@ -2232,6 +2232,7 @@ export namespace Prisma {
   }
 
   export type StreamMinAggregateOutputType = {
+    spaceId: string | null
     id: string | null
     type: $Enums.StreamType | null
     url: string | null
@@ -2244,6 +2245,7 @@ export namespace Prisma {
   }
 
   export type StreamMaxAggregateOutputType = {
+    spaceId: string | null
     id: string | null
     type: $Enums.StreamType | null
     url: string | null
@@ -2256,6 +2258,7 @@ export namespace Prisma {
   }
 
   export type StreamCountAggregateOutputType = {
+    spaceId: number
     id: number
     type: number
     url: number
@@ -2270,6 +2273,7 @@ export namespace Prisma {
 
 
   export type StreamMinAggregateInputType = {
+    spaceId?: true
     id?: true
     type?: true
     url?: true
@@ -2282,6 +2286,7 @@ export namespace Prisma {
   }
 
   export type StreamMaxAggregateInputType = {
+    spaceId?: true
     id?: true
     type?: true
     url?: true
@@ -2294,6 +2299,7 @@ export namespace Prisma {
   }
 
   export type StreamCountAggregateInputType = {
+    spaceId?: true
     id?: true
     type?: true
     url?: true
@@ -2379,6 +2385,7 @@ export namespace Prisma {
   }
 
   export type StreamGroupByOutputType = {
+    spaceId: string
     id: string
     type: $Enums.StreamType
     url: string
@@ -2408,6 +2415,7 @@ export namespace Prisma {
 
 
   export type StreamSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    spaceId?: boolean
     id?: boolean
     type?: boolean
     url?: boolean
@@ -2423,6 +2431,7 @@ export namespace Prisma {
   }, ExtArgs["result"]["stream"]>
 
   export type StreamSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    spaceId?: boolean
     id?: boolean
     type?: boolean
     url?: boolean
@@ -2436,6 +2445,7 @@ export namespace Prisma {
   }, ExtArgs["result"]["stream"]>
 
   export type StreamSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    spaceId?: boolean
     id?: boolean
     type?: boolean
     url?: boolean
@@ -2449,6 +2459,7 @@ export namespace Prisma {
   }, ExtArgs["result"]["stream"]>
 
   export type StreamSelectScalar = {
+    spaceId?: boolean
     id?: boolean
     type?: boolean
     url?: boolean
@@ -2460,7 +2471,7 @@ export namespace Prisma {
     userId?: boolean
   }
 
-  export type StreamOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "type" | "url" | "extractedId" | "title" | "smallImg" | "bigImg" | "active" | "userId", ExtArgs["result"]["stream"]>
+  export type StreamOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"spaceId" | "id" | "type" | "url" | "extractedId" | "title" | "smallImg" | "bigImg" | "active" | "userId", ExtArgs["result"]["stream"]>
   export type StreamInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     user?: boolean | UserDefaultArgs<ExtArgs>
     upvote?: boolean | Stream$upvoteArgs<ExtArgs>
@@ -2480,6 +2491,7 @@ export namespace Prisma {
       upvote: Prisma.$UpvotePayload<ExtArgs>[]
     }
     scalars: $Extensions.GetPayloadResult<{
+      spaceId: string
       id: string
       type: $Enums.StreamType
       url: string
@@ -2572,8 +2584,8 @@ export namespace Prisma {
      * // Get first 10 Streams
      * const streams = await prisma.stream.findMany({ take: 10 })
      * 
-     * // Only select the `id`
-     * const streamWithIdOnly = await prisma.stream.findMany({ select: { id: true } })
+     * // Only select the `spaceId`
+     * const streamWithSpaceIdOnly = await prisma.stream.findMany({ select: { spaceId: true } })
      * 
      */
     findMany<T extends StreamFindManyArgs>(args?: SelectSubset<T, StreamFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$StreamPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
@@ -2617,9 +2629,9 @@ export namespace Prisma {
      *   ]
      * })
      * 
-     * // Create many Streams and only return the `id`
-     * const streamWithIdOnly = await prisma.stream.createManyAndReturn({
-     *   select: { id: true },
+     * // Create many Streams and only return the `spaceId`
+     * const streamWithSpaceIdOnly = await prisma.stream.createManyAndReturn({
+     *   select: { spaceId: true },
      *   data: [
      *     // ... provide data here
      *   ]
@@ -2708,9 +2720,9 @@ export namespace Prisma {
      *   ]
      * })
      * 
-     * // Update zero or more Streams and only return the `id`
-     * const streamWithIdOnly = await prisma.stream.updateManyAndReturn({
-     *   select: { id: true },
+     * // Update zero or more Streams and only return the `spaceId`
+     * const streamWithSpaceIdOnly = await prisma.stream.updateManyAndReturn({
+     *   select: { spaceId: true },
      *   where: {
      *     // ... provide filter here
      *   },
@@ -2914,6 +2926,7 @@ export namespace Prisma {
    * Fields of the Stream model
    */
   interface StreamFieldRefs {
+    readonly spaceId: FieldRef<"Stream", 'String'>
     readonly id: FieldRef<"Stream", 'String'>
     readonly type: FieldRef<"Stream", 'StreamType'>
     readonly url: FieldRef<"Stream", 'String'>
@@ -4425,6 +4438,7 @@ export namespace Prisma {
 
 
   export const StreamScalarFieldEnum: {
+    spaceId: 'spaceId',
     id: 'id',
     type: 'type',
     url: 'url',
@@ -4587,6 +4601,7 @@ export namespace Prisma {
     AND?: StreamWhereInput | StreamWhereInput[]
     OR?: StreamWhereInput[]
     NOT?: StreamWhereInput | StreamWhereInput[]
+    spaceId?: StringFilter<"Stream"> | string
     id?: StringFilter<"Stream"> | string
     type?: EnumStreamTypeFilter<"Stream"> | $Enums.StreamType
     url?: StringFilter<"Stream"> | string
@@ -4601,6 +4616,7 @@ export namespace Prisma {
   }
 
   export type StreamOrderByWithRelationInput = {
+    spaceId?: SortOrder
     id?: SortOrder
     type?: SortOrder
     url?: SortOrder
@@ -4616,9 +4632,11 @@ export namespace Prisma {
 
   export type StreamWhereUniqueInput = Prisma.AtLeast<{
     id?: string
+    spaceId_title?: StreamSpaceIdTitleCompoundUniqueInput
     AND?: StreamWhereInput | StreamWhereInput[]
     OR?: StreamWhereInput[]
     NOT?: StreamWhereInput | StreamWhereInput[]
+    spaceId?: StringFilter<"Stream"> | string
     type?: EnumStreamTypeFilter<"Stream"> | $Enums.StreamType
     url?: StringFilter<"Stream"> | string
     extractedId?: StringFilter<"Stream"> | string
@@ -4629,9 +4647,10 @@ export namespace Prisma {
     userId?: StringFilter<"Stream"> | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
     upvote?: UpvoteListRelationFilter
-  }, "id">
+  }, "id" | "spaceId_title">
 
   export type StreamOrderByWithAggregationInput = {
+    spaceId?: SortOrder
     id?: SortOrder
     type?: SortOrder
     url?: SortOrder
@@ -4650,6 +4669,7 @@ export namespace Prisma {
     AND?: StreamScalarWhereWithAggregatesInput | StreamScalarWhereWithAggregatesInput[]
     OR?: StreamScalarWhereWithAggregatesInput[]
     NOT?: StreamScalarWhereWithAggregatesInput | StreamScalarWhereWithAggregatesInput[]
+    spaceId?: StringWithAggregatesFilter<"Stream"> | string
     id?: StringWithAggregatesFilter<"Stream"> | string
     type?: EnumStreamTypeWithAggregatesFilter<"Stream"> | $Enums.StreamType
     url?: StringWithAggregatesFilter<"Stream"> | string
@@ -4761,6 +4781,7 @@ export namespace Prisma {
   }
 
   export type StreamCreateInput = {
+    spaceId?: string
     id?: string
     type: $Enums.StreamType
     url: string
@@ -4774,6 +4795,7 @@ export namespace Prisma {
   }
 
   export type StreamUncheckedCreateInput = {
+    spaceId?: string
     id?: string
     type: $Enums.StreamType
     url: string
@@ -4787,6 +4809,7 @@ export namespace Prisma {
   }
 
   export type StreamUpdateInput = {
+    spaceId?: StringFieldUpdateOperationsInput | string
     id?: StringFieldUpdateOperationsInput | string
     type?: EnumStreamTypeFieldUpdateOperationsInput | $Enums.StreamType
     url?: StringFieldUpdateOperationsInput | string
@@ -4800,6 +4823,7 @@ export namespace Prisma {
   }
 
   export type StreamUncheckedUpdateInput = {
+    spaceId?: StringFieldUpdateOperationsInput | string
     id?: StringFieldUpdateOperationsInput | string
     type?: EnumStreamTypeFieldUpdateOperationsInput | $Enums.StreamType
     url?: StringFieldUpdateOperationsInput | string
@@ -4813,6 +4837,7 @@ export namespace Prisma {
   }
 
   export type StreamCreateManyInput = {
+    spaceId?: string
     id?: string
     type: $Enums.StreamType
     url: string
@@ -4825,6 +4850,7 @@ export namespace Prisma {
   }
 
   export type StreamUpdateManyMutationInput = {
+    spaceId?: StringFieldUpdateOperationsInput | string
     id?: StringFieldUpdateOperationsInput | string
     type?: EnumStreamTypeFieldUpdateOperationsInput | $Enums.StreamType
     url?: StringFieldUpdateOperationsInput | string
@@ -4836,6 +4862,7 @@ export namespace Prisma {
   }
 
   export type StreamUncheckedUpdateManyInput = {
+    spaceId?: StringFieldUpdateOperationsInput | string
     id?: StringFieldUpdateOperationsInput | string
     type?: EnumStreamTypeFieldUpdateOperationsInput | $Enums.StreamType
     url?: StringFieldUpdateOperationsInput | string
@@ -4992,7 +5019,13 @@ export namespace Prisma {
     isNot?: UserWhereInput
   }
 
+  export type StreamSpaceIdTitleCompoundUniqueInput = {
+    spaceId: string
+    title: string
+  }
+
   export type StreamCountOrderByAggregateInput = {
+    spaceId?: SortOrder
     id?: SortOrder
     type?: SortOrder
     url?: SortOrder
@@ -5005,6 +5038,7 @@ export namespace Prisma {
   }
 
   export type StreamMaxOrderByAggregateInput = {
+    spaceId?: SortOrder
     id?: SortOrder
     type?: SortOrder
     url?: SortOrder
@@ -5017,6 +5051,7 @@ export namespace Prisma {
   }
 
   export type StreamMinOrderByAggregateInput = {
+    spaceId?: SortOrder
     id?: SortOrder
     type?: SortOrder
     url?: SortOrder
@@ -5348,6 +5383,7 @@ export namespace Prisma {
   }
 
   export type StreamCreateWithoutUserInput = {
+    spaceId?: string
     id?: string
     type: $Enums.StreamType
     url: string
@@ -5360,6 +5396,7 @@ export namespace Prisma {
   }
 
   export type StreamUncheckedCreateWithoutUserInput = {
+    spaceId?: string
     id?: string
     type: $Enums.StreamType
     url: string
@@ -5421,6 +5458,7 @@ export namespace Prisma {
     AND?: StreamScalarWhereInput | StreamScalarWhereInput[]
     OR?: StreamScalarWhereInput[]
     NOT?: StreamScalarWhereInput | StreamScalarWhereInput[]
+    spaceId?: StringFilter<"Stream"> | string
     id?: StringFilter<"Stream"> | string
     type?: EnumStreamTypeFilter<"Stream"> | $Enums.StreamType
     url?: StringFilter<"Stream"> | string
@@ -5557,6 +5595,7 @@ export namespace Prisma {
   }
 
   export type StreamCreateWithoutUpvoteInput = {
+    spaceId?: string
     id?: string
     type: $Enums.StreamType
     url: string
@@ -5569,6 +5608,7 @@ export namespace Prisma {
   }
 
   export type StreamUncheckedCreateWithoutUpvoteInput = {
+    spaceId?: string
     id?: string
     type: $Enums.StreamType
     url: string
@@ -5622,6 +5662,7 @@ export namespace Prisma {
   }
 
   export type StreamUpdateWithoutUpvoteInput = {
+    spaceId?: StringFieldUpdateOperationsInput | string
     id?: StringFieldUpdateOperationsInput | string
     type?: EnumStreamTypeFieldUpdateOperationsInput | $Enums.StreamType
     url?: StringFieldUpdateOperationsInput | string
@@ -5634,6 +5675,7 @@ export namespace Prisma {
   }
 
   export type StreamUncheckedUpdateWithoutUpvoteInput = {
+    spaceId?: StringFieldUpdateOperationsInput | string
     id?: StringFieldUpdateOperationsInput | string
     type?: EnumStreamTypeFieldUpdateOperationsInput | $Enums.StreamType
     url?: StringFieldUpdateOperationsInput | string
@@ -5646,6 +5688,7 @@ export namespace Prisma {
   }
 
   export type StreamCreateManyUserInput = {
+    spaceId?: string
     id?: string
     type: $Enums.StreamType
     url: string
@@ -5662,6 +5705,7 @@ export namespace Prisma {
   }
 
   export type StreamUpdateWithoutUserInput = {
+    spaceId?: StringFieldUpdateOperationsInput | string
     id?: StringFieldUpdateOperationsInput | string
     type?: EnumStreamTypeFieldUpdateOperationsInput | $Enums.StreamType
     url?: StringFieldUpdateOperationsInput | string
@@ -5674,6 +5718,7 @@ export namespace Prisma {
   }
 
   export type StreamUncheckedUpdateWithoutUserInput = {
+    spaceId?: StringFieldUpdateOperationsInput | string
     id?: StringFieldUpdateOperationsInput | string
     type?: EnumStreamTypeFieldUpdateOperationsInput | $Enums.StreamType
     url?: StringFieldUpdateOperationsInput | string
@@ -5686,6 +5731,7 @@ export namespace Prisma {
   }
 
   export type StreamUncheckedUpdateManyWithoutUserInput = {
+    spaceId?: StringFieldUpdateOperationsInput | string
     id?: StringFieldUpdateOperationsInput | string
     type?: EnumStreamTypeFieldUpdateOperationsInput | $Enums.StreamType
     url?: StringFieldUpdateOperationsInput | string

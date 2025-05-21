@@ -19,8 +19,10 @@
     "prisma": "^6.6.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-lite-youtube-embed": "^2.5.1",
     "shadcn": "^2.5.0",
     "tailwind-merge": "^3.2.0",
+    "typescript-toastify": "^1.0.4",
     "youtube-search-api": "^1.2.2",
     "zod": "^3.24.3"
   },
