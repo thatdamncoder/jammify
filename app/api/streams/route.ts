@@ -4,9 +4,11 @@ import { z } from "zod";
 //@ts-ignore
 import youtubesearchapi from "youtube-search-api";
 import { YOUTUBE_REGEX, MISSING_THUMBNAIL_URL, isValidYoutubeURL, getYoutubeVideoId } from "@/lib/url";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 const CreateStreamSchema = z.object({
-    creatorId: z.string(),
+    spaceId: z.string(),
     url: z.string() 
 });
 
@@ -15,9 +17,19 @@ const ViewAllSchema = z.object({
 })
 
 export const POST = async (req: NextRequest) => {
+    const session = await getServerSession(authOptions);
+    
+    if(!session?.user._id){
+        return NextResponse.json(
+            {message: "Unauthenticated"},
+            {status: 403}
+        );
+    }
+    
+    const creatorId = session.user._id; 
     try {
         const data = CreateStreamSchema.parse(await req.json());
-        const {creatorId, url} = data;
+        const {spaceId, url} = data;
 
         const isYoutubeURL = isValidYoutubeURL(url);
         if(!isYoutubeURL){
@@ -33,13 +45,14 @@ export const POST = async (req: NextRequest) => {
         const stream = await prismaClient.stream.create({
             data: {
                 userId: creatorId,
+                spaceId: spaceId,
                 url: url,
                 type: "Youtube",
                 extractedId: extractedId,
                 title: title ?? "Can't find video title",
                 smallImg: (thumbnails.length > 1 ? thumbnails[thumbnails.length - 2]?.url : thumbnails[thumbnails.length - 1]?.url) ?? MISSING_THUMBNAIL_URL,
-                bigImg: (thumbnails.length > 0 && thumbnails[thumbnails.length - 1].url) ?? MISSING_THUMBNAIL_URL
-    
+                bigImg: (thumbnails.length > 0 && thumbnails[thumbnails.length - 1].url) ?? MISSING_THUMBNAIL_URL,
+                createdAt: new Date()
             }
         });
         return NextResponse.json({
@@ -59,13 +72,46 @@ export const POST = async (req: NextRequest) => {
 
 export const GET = async (req: NextRequest) => {
     //code 1
-    const creatorId = req.nextUrl.searchParams.get("creatorId");
-    const streams = await prismaClient.stream.findMany({
-        where:{
-            userId: creatorId ?? ""
+    const spaceId = req.nextUrl.searchParams.get("spaceId");
+    const session = await getServerSession(authOptions);
+    
+    if (!spaceId) {
+        return NextResponse.json(
+            {message: "No spaceId provided while fetching streams"},
+            {status: 411}
+        );
+    }
+    
+    const userId = session?.user._id;
+
+
+    const streamsThisUser = await prismaClient.stream.findMany({
+        where: {
+            spaceId: spaceId 
+        },
+        include: {
+            _count: {
+                select: {
+                    upvote: true
+                }
+            },
+            upvote: {
+                where: {
+                    // userId: creatorId as string
+                    userId: (userId ?? "") as string
+                }
+            }
         }
+    }); 
+    // console.log("------streams fetched for user--------" ,streamsThisUser);
+    
+    return NextResponse.json({
+        streams: streamsThisUser.map(({_count, upvote, ...rest}) => ({ 
+            ...rest,
+            upvoteCount: _count.upvote,
+            hasUpvoted: userId && upvote.length > 0
+        }))
     });
-    return NextResponse.json(streams);
 
     //code2
     //use when it is needed that only authorized users see 
