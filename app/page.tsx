@@ -5,7 +5,7 @@ export default function Home() {
   return (
     <>
     <Redirect />
-    <div className="flex flex-col h-screen bg-black text-white items-center justify-center gap-5">
+    <div className="flex flex-col h-screen dark items-center justify-center gap-5">
         <p className="text-9xl font-bold">muzi</p>
         <AppBar />
     </div>

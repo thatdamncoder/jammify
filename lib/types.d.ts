@@ -1,6 +1,6 @@
 import { $Enums } from "./generated/prisma";
 
-interface Video{
+interface Video {
     url: string;
     type: $Enums.StreamType;
     id: string;
@@ -12,8 +12,18 @@ interface Video{
     userId: string;
     upvoteCount: number;
     hasUpvoted: boolean;
+    createdAt: Date;
 }
 
-interface Form{
+interface Space {
+    id: string;
+    creatorId: string;   
+    title: string; 
+    private: boolean;
+    createdAt: Date;
+    isActive: boolean;
+}
+
+interface Form {
     url: string;
 }
