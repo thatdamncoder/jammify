@@ -20,6 +20,7 @@ model User {
   provider Provider
   streams  Stream[]
   upvote   Upvote[]
+  spaces   Space[]
 }
 
 model Stream {
@@ -31,12 +32,25 @@ model Stream {
   title       String     @default("")
   smallImg    String     @default("")
   bigImg      String     @default("")
-  active      Boolean    @default(true)
+  isActive    Boolean    @default(true)
   userId      String
+  createdAt   DateTime   @default(now())
   user        User       @relation(fields: [userId], references: [id])
   upvote      Upvote[]
 
   @@unique([spaceId, title])
+}
+
+//TODO: to review
+
+model Space {
+  id        String   @id @default(uuid())
+  creatorId String
+  title     String
+  private   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  isActive  Boolean  @default(true)
+  user      User     @relation(fields: [creatorId], references: [id])
 }
 
 model Upvote {
