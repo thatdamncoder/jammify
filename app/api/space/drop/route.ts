@@ -3,7 +3,7 @@ import { prismaClient } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 
-export default async function DELETE(req: NextRequest){
+export async function DELETE(req: NextRequest){
     const session = await getServerSession(authOptions);
 
     if (!session?.user._id){
@@ -14,7 +14,15 @@ export default async function DELETE(req: NextRequest){
     }
 
     const userId = session.user._id;
-    const {spaceId} = await req.json();
+    const { searchParams } = new URL(req.url);
+    const spaceId = searchParams.get("id");
+
+    if (!spaceId) {
+        return NextResponse.json(
+            {message: "spaceId required"},
+            {status: 400}
+        );
+    }
 
     try {
         const thisSpace = await prismaClient.space.findFirst({

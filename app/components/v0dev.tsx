@@ -14,6 +14,8 @@ import Toast from "typescript-toastify";
 import YouTubePlayer from 'youtube-player';
 import { useSocket } from "@/hooks/useSocket";
 import { useRouter } from "next/navigation";
+import AlertDialogPopUp from "./AlertDialog";
+import { Button } from "@/components/ui/button";
 
 const DEFAULT_PLAYING_URL = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
 const DEFAULT_PLAYING_EXTRACTED_ID = "dQw4w9WgXcQ";
@@ -28,9 +30,13 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
   const [addSongMessage, setAddSongMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [hoveringOnTrack, setHoveringOnTrack] = useState<string | null>(null);
+  const [alertDialogOpen, setAlertDialogOpen] = useState<boolean> (false);
   const videoPlayerRef = useRef(null);
   const socket = useSocket();
   const router = useRouter();
+
+  
+
 
   useEffect(() => {
     if (!socket) return;
@@ -283,6 +289,18 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
     }
   }
 
+  const handleDeleteSpace = async () => {
+    const res = await fetch(`/api/space/drop?id=${spaceId}`, {
+      method: "DELETE"
+    });
+
+    if(!res.ok){
+      console.log("an error occured while deleting space");
+      return;
+    }
+    router.push("/creator/dashboard");
+  }
+
 
   return (
     <div className="flex flex-col h-screen bg-black text-white">
@@ -331,7 +349,7 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
             </div>
             <button 
               disabled={loading}
-              className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-md text-sm"   
+              className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-md text-sm cursor-pointer"   
               type="submit"
             >
               <PlusCircle className="h-4 w-4" />
@@ -374,11 +392,25 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
             </div>
 
             {/* Trash button */}
-            <div className="text-sm text-zinc-400 mr-2">
+            {/* <div className="text-sm text-zinc-400 mr-2">
               <button className="hover:text-red-500 transition" onClick={() => emptyQueue()}>
                 <Trash size={19} />
               </button>
-            </div>
+            </div> */}
+            {
+              <AlertDialogPopUp 
+                title="Are you sure you want to delete all tracks?"
+                description="This action will delete all tracks in this space but the space will not be deleted. This action is not recoverable."
+                action="Delete"  
+                trigger={
+                  <Trash 
+                    size={19} 
+                    className="hover:text-red-500 hover:scale-110 transition-all cursor-pointer"
+                  />
+                }
+                onClick={emptyQueue}
+              />
+            }
         </div>
 
           
@@ -432,13 +464,23 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
                 <div className="col-span-1 text-sm text-zinc-400 text-center">{"1:20"}</div>
                 <div className={`col-span-1 text-sm text-zinc-400 flex justify-center`}>{<Music />}</div>
                 { hoveringOnTrack && hoveringOnTrack === track.id && 
-                  <button 
-                    className="pl-2 col-span-1 text-sm text-zinc-400 text-center"
-                    onClick={() => {removeTrack(track.id)}}
-                  >
-                    {<CircleX size={19}/>}
-                  </button>
+                
+                  <AlertDialogPopUp 
+                    title="Are you sure you want to delete this track?"
+                    description="This action is not recoverable."
+                    action="Delete"  
+                    trigger={ 
+                      <span 
+                        className="flex items-center justify-center p-1 text-zinc-400 hover:text-red-500 hover:scale-110 transition-all cursor-pointer"> 
+                        <CircleX size={19}/>
+                      </span>
+                    }
+                    onClick={() => removeTrack(track.id)}
+                
+                    id={track.id}
+                  />
                 }
+                
                 
               </div>
             ))}
@@ -448,42 +490,55 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
         
 
         {/* Right sidebar */}
-        <div className="col-span-4 bg-zinc-900 p-4 overflow-y-auto">
+        <div className="col-span-4 bg-zinc-900 p-4 pt-6 overflow-y-auto">
           <div className="space-y-4">
-
-            <button className="hover:bg-zinc-800 p-1 rounded">
-              <LogOut 
+            <div className="flex items-center justify-end gap-2">
+            <AlertDialogPopUp 
+                  title="Are you sure you want to delete this space?"
+                  description="All tracks along with this space will be deleted. This action is not recoverable."
+                  action="Delete Space"  
+                  trigger={ 
+                    <Button className="hover:scale-100 transition-all cursor-pointer">Drop Space</Button>
+                  }
+                  onClick={handleDeleteSpace}
+                />
+            <button 
+              className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-md text-sm cursor-pointer"   
+            >
+              <LogOut
                 onClick={async () => {
                   await signOut({callbackUrl: "/"});
                 }}
                 size={21}
-              />
+                />
             </button>
+            </div>
+          <div/>        
 
             {/* YouTube embed with Now Playing text */}
-            <div className="mt-6">
-              <h3 
-                className="my-2 font-sans text-yellow-300 text-xl font-semibold inline-block bg-clip-text"
-                >now playing</h3>
-              <h2 className="my-4">{currentPlaying?.title || "Never Gonna Give You Up"}</h2>
-              <div className=" bg-zinc-800 rounded-md overflow-hidden">
-                <div className="w-full h-60" ref={videoPlayerRef}></div>
-                {/*<LiteYouTubeEmbed 
-                  id= {getYoutubeVideoId(currentPlaying?.url ?? DEFAULT_PLAYING_URL)}
-                  title="Random title"
-                />*/}
-              </div>
+          <div className="mt-6">
+            <h3 
+              className="my-2 font-sans text-yellow-300 text-xl font-semibold inline-block bg-clip-text"
+              >now playing</h3>
+            <h2 className="my-4">{currentPlaying?.title || "Never Gonna Give You Up"}</h2>
+            <div className=" bg-zinc-800 rounded-md overflow-hidden">
+              <div className="w-full h-60" ref={videoPlayerRef}></div>
+              {/*<LiteYouTubeEmbed 
+                id= {getYoutubeVideoId(currentPlaying?.url ?? DEFAULT_PLAYING_URL)}
+                title="Random title"
+              />*/}
             </div>
+          </div>
           
 
-            <div className="flex flex-row justify-center active:scale-95 hover:scale-95   bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-md text-sm">
-              <button 
-                className="text-center flex flex-row justify-center gap-2  active:scale-95 transition-all duration-300 ease-in-out"
-                onClick={() => handlePlayNext()}
-              > 
-                  Play Next {<ArrowRightFromLine size={23}/>}
-              </button>   
-            </div>
+          <div className="flex flex-row justify-center active:scale-95 hover:scale-95   bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-md text-sm">
+            <button 
+              className="text-center flex flex-row justify-center gap-2  active:scale-95 transition-all duration-300 ease-in-out"
+              onClick={() => handlePlayNext()}
+            > 
+                Play Next {<ArrowRightFromLine size={23}/>}
+            </button>   
+          </div>
             <div className="mt-6">
               { !likedTracks && <div className="text-center text-xs text-zinc-500">No liked songs yet</div> }
               { likedTracks && 
