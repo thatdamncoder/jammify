@@ -24,7 +24,7 @@ export default function AlertDialogPopUp(
     : AlertDialogParams){
     return (
         <AlertDialog>
-            <AlertDialogTrigger>{trigger}</AlertDialogTrigger>
+            <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>
             <AlertDialogContent>
                 <AlertDialogHeader>
                     <AlertDialogTitle className="text-white">
