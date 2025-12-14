@@ -15,3 +15,10 @@ client  --will not close until client closes it--  server
 
 docker exec -it vibrant_black psql -U postgres -d muziapp
 
+
+1. npm i
+2. docker run --name muziapp -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=randompassword -e POSTGRES_DB=muziapp -p 5432:5432 -d postgres:16
+3. docker ps
+4. npx prisma migrate dev
+5. npm run dev
+

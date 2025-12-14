@@ -59,7 +59,7 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
       const sorted = queue.sort(customSortQueueComparator);
       setTracks(sorted);
     });
-    
+    console.log("socket inside upvote changed");
     return () => {
       socket.off("upvoteChanged");
       socket.off("changedCurrentPlayingVideo");

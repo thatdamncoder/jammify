@@ -11,7 +11,7 @@ export const authOptions: NextAuthOptions = {
     ],
     secret: process.env.NEXTAUTH_SECRET!,
     callbacks: {
-        async signIn(params){
+        async signIn(params){ //runs on every login 
             if (!params.user.email){
                 return false;
             }
@@ -26,7 +26,7 @@ export const authOptions: NextAuthOptions = {
             }
             return true;
         },
-        async jwt({user, token}) {
+        async jwt({user, token}) { //runs on every login and every request
             if (user?.email) {
                 const dbUser = await prismaClient.user.findUnique({
                     where: {
@@ -40,7 +40,7 @@ export const authOptions: NextAuthOptions = {
             }
             return token;
         },
-        async session({session, token}){
+        async session({session, token}){ //runs when frontend calls useSession()
             if(session.user && token._id){
                 session.user._id = token._id as string;
             }
