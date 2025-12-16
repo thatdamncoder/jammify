@@ -40,11 +40,11 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
 
   useEffect(() => {
     if (!socket) return;
-    socket.on("upvoteChanged", ({id, count}) => {
+    socket.on("upvoteChanged", ({id, count, upvoted}) => {
       setTracks((prev) => {
         if (!prev) return prev;
-        const copy = prev?.map((track) => {
-          return track.id === id? {...track, upvoteCount: count} : track;
+        const copy = prev.map((track) => {
+          return track.id === id? {...track, upvoteCount: count, hasUpvoted: upvoted} : track;
         });
         return copy.sort(customSortQueueComparator);
       });
@@ -149,10 +149,11 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
     }
     const likedTrackIndex = tracks.findIndex((track) => track.id === id);
     const currentCount = tracks[likedTrackIndex].upvoteCount;
-    // const isAlreadyLiked = tracks[likedTrackIndex].hasUpvoted;
+    const isAlreadyLiked = tracks[likedTrackIndex].hasUpvoted;
     // console.log("inside handleupvote, upvote received for ", id," with index ",likedTrackIndex);
     // console.log("isalreadyliked for current upvoted ", isAlreadyLiked);
-    socket.emit("upvoteChange", {id, count: currentCount + 1});
+    socket.emit("upvoteChange", {id, count: currentCount + 1, upvoted: !isAlreadyLiked});
+    console.log("working till here in handleupvote");
     const res = await fetch("/api/streams/upvote", {
       method: "POST",
       body: JSON.stringify({streamId: id})
@@ -171,6 +172,7 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
     // console.log("inside handleupvote, upvote received for ", id," with index ",likedTrackIndex);
     // console.log("isalreadyliked for current upvoted ", isAlreadyLiked);
     socket.emit("upvoteChange", {id, count: currentCount - 1});
+    console.log("working till here in handleupvote");
     const res = await fetch("/api/streams/downvote", {
       method: "POST",
       body: JSON.stringify({streamId: id})
@@ -359,16 +361,16 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
 
           {/* youtube embed*/}
           {
-            addUrl && isValidYoutubeURL(addUrl) && !loading &&
-            <div>
-              <div className="mt-3"><h4>Preview</h4></div>
-              <div className="w-100 aspect-video bg-zinc-800 rounded-md overflow-hidden">
-                <LiteYouTubeEmbed 
-                  id= {getYoutubeVideoId(addUrl)}
-                  title="Random title"
-                />
-              </div>
-            </div>
+            // addUrl && isValidYoutubeURL(addUrl) && !loading &&
+            // <div>
+            //   <div className="mt-3"><h4>Preview</h4></div>
+            //   <div className="w-100 aspect-video bg-zinc-800 rounded-md overflow-hidden">
+            //     <LiteYouTubeEmbed 
+            //       id= {getYoutubeVideoId(addUrl)}
+            //       title="Random title"
+            //     />
+            //   </div>
+            // </div>
           }
 
           {

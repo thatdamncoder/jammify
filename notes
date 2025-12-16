@@ -22,3 +22,9 @@ docker exec -it vibrant_black psql -U postgres -d muziapp
 4. npx prisma migrate dev
 5. npm run dev
 
+todo-
+sync youtube video
+what if yt video is too long
+controls for adding removing songs etc
+current online people
+rate limiting

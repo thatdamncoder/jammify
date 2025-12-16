@@ -1,6 +1,5 @@
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import { prismaClient } from "@/lib/db";
-import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -10,7 +9,7 @@ const createSpaceSchema = z.object({
 });
 
 export async function POST(req: NextRequest){
-    const session = await getServerSession(authOptions);
+    const session = await auth();
 
     if(!session?.user._id){
         return NextResponse.json(

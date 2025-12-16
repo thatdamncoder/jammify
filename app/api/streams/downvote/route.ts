@@ -1,6 +1,5 @@
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import { prismaClient } from "@/lib/db";
-import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod";
 
@@ -9,10 +8,11 @@ const DownvoteSchema = z.object({
 })
 
 export const POST = async (req: NextRequest) => {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
+    console.log("session in streams/downvote", session);
     if(!session?.user._id){
         return NextResponse.json(
-            {error: "Unauthenticated"},
+            {statusText: "Unauthenticated"},
             {status: 403}
         );
     }
@@ -38,8 +38,9 @@ export const POST = async (req: NextRequest) => {
         );
 
     } catch (error){
-        throw NextResponse.json(
-            {error: "An error occured while downvoting stream"},
+        console.log(error);
+        return NextResponse.json(
+            {statusText: "An error occured while downvoting stream"},
             {status: 403}
         );
     }

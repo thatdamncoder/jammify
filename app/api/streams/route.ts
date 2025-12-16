@@ -4,8 +4,7 @@ import { z } from "zod";
 //@ts-ignore
 import youtubesearchapi from "youtube-search-api";
 import { YOUTUBE_REGEX, MISSING_THUMBNAIL_URL, isValidYoutubeURL, getYoutubeVideoId } from "@/lib/url";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 
 const CreateStreamSchema = z.object({
     spaceId: z.string(),
@@ -17,7 +16,7 @@ const ViewAllSchema = z.object({
 })
 
 export const POST = async (req: NextRequest) => {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     
     if(!session?.user._id){
         return NextResponse.json(
@@ -73,7 +72,7 @@ export const POST = async (req: NextRequest) => {
 export const GET = async (req: NextRequest) => {
     //code 1
     const spaceId = req.nextUrl.searchParams.get("spaceId");
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     
     if (!spaceId) {
         return NextResponse.json(
@@ -116,7 +115,7 @@ export const GET = async (req: NextRequest) => {
     //code2
     //use when it is needed that only authorized users see 
     //but here any one can see the streams by user123
-    // const session = await getServerSession();
+    // const session = await auth();
 
     // if(!session?.user._id){
     //     return NextResponse.json(

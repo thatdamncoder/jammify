@@ -1,6 +1,5 @@
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import { prismaClient } from "@/lib/db";
-import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod";
 
@@ -9,7 +8,7 @@ const UpvoteSchema = z.object({
 })
 
 export const POST = async (req: NextRequest) => {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     console.log("session in streams/upvote ",session);
     if(!session?.user._id){
         return NextResponse.json(
@@ -37,7 +36,8 @@ export const POST = async (req: NextRequest) => {
         );
 
     } catch (error){
-        throw NextResponse.json(
+        console.log(error);
+        return NextResponse.json(
             {error: "An error occured while upvoting stream"},
             {status: 403}
         );

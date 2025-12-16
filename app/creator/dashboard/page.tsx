@@ -23,10 +23,11 @@ import {
 } from "@/components/ui/sidebar"
 import SpaceCard from "@/app/components/SpaceCard"
 import { prismaClient } from "@/lib/db"
-import { useSession } from "next-auth/react"
+import { useSession, signOut } from "next-auth/react"
 import { Space } from "@/lib/types"
 import { Switch } from "@/components/ui/switch"
 import { useRouter } from "next/navigation"
+import Image from "next/image"
 
  //TODO: colorful cards, only avatar and name, when hover, show details, animation reveal from down to up
 
@@ -39,6 +40,7 @@ export default function SpacesPage() {
   const [newSpaceDescription, setNewSpaceDescription] = useState("");
   const [newSpacePrivate, setNewSpacePrivate] = useState(true);
   const router = useRouter();
+  const profileImageURL = session?.data?.user?.image;
 
   const handleCreateSpace = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,18 +127,43 @@ export default function SpacesPage() {
         </SidebarContent>
 
         <SidebarFooter className="border-t border-border p-4">
+        `<div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-            <Avatar>
-                <AvatarFallback className="bg-gradient-to-br from-indigo-400 to-purple-500 text-white">
-                ME
-                </AvatarFallback>
-            </Avatar>
-            <div>
-                <p className="text-sm font-medium">Your Name</p>
-                <p className="text-xs text-muted-foreground">Online</p>
+                {profileImageURL ? (
+                    <Image
+                    src={profileImageURL}
+                    width={30}
+                    height={30}
+                    alt="User profile image"
+                    className="rounded-full"
+                    />
+                ) : (
+                    <Avatar>
+                    <AvatarFallback className="bg-linear-to-br from-indigo-400 to-purple-500 text-white">
+                        ME
+                    </AvatarFallback>
+                    </Avatar>
+                )}
+
+                <div>
+                    <p className="text-sm font-medium">
+                    {session.data?.user?.name ?? "User"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Online</p>
+                </div>
             </div>
-            </div>
-        </SidebarFooter>
+
+            <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => signOut({ callbackUrl: "/" })}
+                className="text-red-400 hover:text-red-500"
+            >
+                Logout
+            </Button>
+        </div>
+        </SidebarFooter>`
+
         </Sidebar>
 
         <main className="flex-1 overflow-auto p-6">
@@ -145,11 +172,11 @@ export default function SpacesPage() {
             <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
                 <DialogTrigger asChild>
-                <Button variant="default" className="bg-gradient-to-r from-orange-400 to-pink-500 text-white hover:opacity-90">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create Space
-                </Button>
-        </DialogTrigger>
+                    <Button variant="default" className="bg-gradient-to-r from-orange-400 to-pink-500 text-white hover:opacity-90">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create Space
+                    </Button>
+                </DialogTrigger>
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
