@@ -31,11 +31,10 @@ export async function POST(req: NextRequest){
                 createdAt: new Date(),
             }
         });
-
+        console.log("space created");
         return NextResponse.json({
             space: rescreateSpace
         });
-
 
     } catch (err){
         console.log(err);

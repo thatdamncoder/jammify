@@ -3,8 +3,8 @@
 import { Search, ChevronDown, MoreVertical, PlusCircle, Music, ArrowRightFromLine, LogOut, Share2, CircleX, Trash, Speaker, House } from "lucide-react"
 import { signOut, useSession } from "next-auth/react";
 import Image from "next/image"
-import { FormEvent, useEffect, useRef, useState } from "react"
-import LiteYouTubeEmbed from  "react-lite-youtube-embed"
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react"
+// import LiteYouTubeEmbed from  "react-lite-youtube-embed"
 import 'react-lite-youtube-embed/dist/LiteYouTubeEmbed.css';
 import UpDownVote from "./UpDownVote";
 import { Video } from "@/lib/types";
@@ -31,13 +31,19 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
   const [loading, setLoading] = useState(false);
   const [hoveringOnTrack, setHoveringOnTrack] = useState<string | null>(null);
   const [alertDialogOpen, setAlertDialogOpen] = useState<boolean> (false);
-  const videoPlayerRef = useRef(null);
+  const uniqueVideoIds = useMemo(() => {
+    return new Set(tracks?.map((track) => track.extractedId));
+  }, [tracks]);
+  const videoPlayerRef = useRef<HTMLDivElement | null>(null);
+  const playerRef = useRef<any>(null);
+  const tracksRef = useRef(tracks);
   const socket = useSocket();
   const router = useRouter();
+  const sortQueue = (queue : Video[]) => {
+    return [...queue].sort(customSortQueueComparator)
+  }
 
-  
-
-
+  //socket
   useEffect(() => {
     if (!socket) return;
     socket.on("upvoteChanged", ({id, count, upvoted}) => {
@@ -56,13 +62,18 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
 
     socket.on("updatedQueue", (queue) => {
       if (!queue) return queue;
-      const sorted = queue.sort(customSortQueueComparator);
-      setTracks(sorted);
+      setTracks(sortQueue(queue));
     });
+    
+    socket.on("updatedQueueOnShift", (queue) => {
+      setTracks(queue);
+    });
+
     console.log("socket inside upvote changed");
     return () => {
       socket.off("upvoteChanged");
       socket.off("changedCurrentPlayingVideo");
+      socket.off("updatedQueueOnShift");
       socket.off("updatedQueue");
     }
   }, [socket]);
@@ -70,35 +81,79 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
 
   useEffect(() => {
     refreshStreams();
-    // setInterval(() => {
-    //   refreshStreams();
-    // }, REFRESH_INTERVAL_MS);
   }, []);
 
-  {/*for autoplaying the next video in the queue */}
   useEffect(() => {
-    if (!videoPlayerRef.current){
-      return;
+    console.log("Tracks state updated:", tracks);
+    tracksRef.current = tracks;
+  },[tracks]);
+
+
+  // useEffect(() => {
+  //   if (!videoPlayerRef.current || !currentPlaying) {
+  //     return;
+  //   }
+  //   let player = YouTubePlayer(videoPlayerRef.current);
+
+  //   // 'loadVideoById' is queued until the player is ready to receive API calls.
+  //   player.loadVideoById(currentPlaying.extractedId);
+
+  //   // 'playVideo' is queue until the player is ready to received API calls and after 'loadVideoById' has been called.
+  //   player.playVideo();
+  //   function eventHandler(event: any) {
+  //     console.log(event);
+  //     console.log(event.data);
+  //     if (event.data === 0) {
+  //       handlePlayNext();
+  //     }
+  //   }
+  //   player.on("stateChange", eventHandler);
+  //   return () => {
+  //     player.destroy();
+  //   };
+  // }, [currentPlaying, videoPlayerRef]);
+  //create player ref only once to avoid race conditions
+  useEffect(() => {
+  if (!videoPlayerRef.current || playerRef.current) return; // Don't re-init if exists
+
+  playerRef.current = YouTubePlayer(videoPlayerRef.current, {
+    playerVars: {
+      autoplay: 1,
+      controls: 1,
+    },
+  });
+
+  const listener = playerRef.current.on('stateChange', (event: any) => {
+    // YouTube's 'Ended' state is 0
+    
+    if (event.data === 0) {
+      console.log("inside listener");
+      if (tracksRef.current && tracksRef.current.length > 0) {
+        handlePlayNext(); 
+      } else {
+        console.log("Ref queue was empty.");
+      }
     }
-    let player = YouTubePlayer(videoPlayerRef.current);
+  });
+
+  return () => {
+    // Clean up the listener and destroy player on unmount
+    playerRef.current?.destroy();
+  };
+}, []);
+
+  {/*for autoplaying the next video in the queue. load video when current playing changes*/}
+  useEffect(() => {
+    if(!playerRef.current) return;
 
     // 'loadVideoById' is queued until the player is ready to receive API calls.
-    player.loadVideoById(currentPlaying?.extractedId || DEFAULT_PLAYING_EXTRACTED_ID);
+    playerRef.current.loadVideoById(currentPlaying?.extractedId || DEFAULT_PLAYING_EXTRACTED_ID);
 
     // 'playVideo' is queue until the player is ready to received API calls and after 'loadVideoById' has been called.
-    player.playVideo();
+    playerRef.current.playVideo();
 
-    player.on('stateChange', (event: any) => {
-      console.log(event.data);
-      if (event.data === 0) {
-        handlePlayNext();
-      }
-    });
-    return () => {
-      player.destroy();
-    }
+  },[currentPlaying]);
 
-  },[currentPlaying, videoPlayerRef]);
 
   async function refreshStreams() {
     try {
@@ -180,15 +235,18 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
   }
 
   
-  const handlePlayNext = () => {
-    if (!socket) return;
-    if (!tracks) return;
-    const nextVideo = tracks[0];
-    const copy = tracks;
-    copy.shift();
-    socket.emit("updateQueue", copy);
+  const handlePlayNext = async () => {
+    if (!socket || !tracks || tracks.length === 0) return;
+    const [nextVideo, ...restQueue] = tracks;
+    
+    socket.emit("updateQueueOnShift", restQueue);
     socket.emit("changeCurrentPlaying", nextVideo);
-  }
+    
+    setTracks(restQueue);
+    setCurrentPlaying(nextVideo);
+
+    // await removeTrack(nextVideo.id); 
+  };
 
   const addNewTrack = async (e : FormEvent) => {
     if (!socket) return;
@@ -203,37 +261,31 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
       return;
     }
 
-    // if (uniqueTitles?.has(title)) {
-    //   console.log("Video already in queue");
-    //   setLoading(false);
-    //   return;
-    // }
-    // setUniqueTitles((prev) => {
-    //   const copy = prev ?? new Set([]);
-    //   copy.add(title);
-    //   return copy;
-    // });
+    const extractedId = getYoutubeVideoId(newSongURL);
+    if (uniqueVideoIds.has(extractedId)) {
+      setAddSongMessage("Track already exists in this space.");
+      setAddUrl("");
+      setLoading(false);
+      setTimeout(() => setAddSongMessage(null), 2000);
+      console.log("caught in client side");
+      return;
+    }
     
     const res = await fetch("/api/streams", {
       method: "POST",
       body: JSON.stringify({url: newSongURL, spaceId: spaceId})
     });
-    if (!res.ok){
-      setAddSongMessage("Track already exists in this space.");
-      setAddUrl("");
-      setLoading(false);
-      setTimeout(() => setAddSongMessage(null) ,2000); 
-      return;
-    }
-
+  
     const newStream = await res.json();
-    const copy = tracks ? [...tracks, newStream] : [newStream];
-    socket.emit("updateQueue", copy);
+    const updated = tracks ? [...tracks, newStream] : [newStream];
+    const sorted = sortQueue(updated);
+    setTracks(sorted);
+    socket.emit("updateQueue", sorted);
 
     setAddSongMessage("Track added!");
     setAddUrl("");
     setLoading(false);
-    setTimeout(() => setAddSongMessage(null) ,2000); 
+    setTimeout(() => setAddSongMessage(null) ,1000); 
   }
 
   const handleShare = async () => {
@@ -359,18 +411,20 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
             </button>
           </form>
 
-          {/* youtube embed*/}
+          {/* youtube embed for preview*/}
           {
-            // addUrl && isValidYoutubeURL(addUrl) && !loading &&
-            // <div>
-            //   <div className="mt-3"><h4>Preview</h4></div>
-            //   <div className="w-100 aspect-video bg-zinc-800 rounded-md overflow-hidden">
-            //     <LiteYouTubeEmbed 
-            //       id= {getYoutubeVideoId(addUrl)}
-            //       title="Random title"
-            //     />
-            //   </div>
-            // </div>
+            addUrl && isValidYoutubeURL(addUrl) && !loading &&
+            <div>
+              <div className="mt-3"><h4>Preview</h4></div>
+              <div className="w-100 aspect-video bg-zinc-800 rounded-md overflow-hidden">
+                <div className="bg-zinc-800 rounded-md overflow-hidden">
+                  <div
+                    ref={videoPlayerRef}
+                    className="w-full h-60"
+                  />
+                </div>
+              </div>
+            </div>
           }
 
           {
@@ -441,7 +495,7 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
                 onMouseLeave={() => setHoveringOnTrack(null)}
               >
                 <div className="col-span-7 flex items-center gap-3">
-                  <div className="relative aspect-[5/3] w-12 rounded overflow-hidden bg-zinc-800">
+                  <div className="relative aspect-5/3 w-12 rounded overflow-hidden bg-zinc-800">
                     <Image
                       src={track.smallImg || "/placeholder.png"}
                       alt={track.title}
@@ -482,15 +536,12 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
                     id={track.id}
                   />
                 }
-                
-                
               </div>
             ))}
           </div>
         }
         </div>
         
-
         {/* Right sidebar */}
         <div className="col-span-4 bg-zinc-900 p-4 pt-6 overflow-y-auto">
           <div className="space-y-4">
@@ -525,15 +576,17 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
             <h2 className="my-4">{currentPlaying?.title || "Never Gonna Give You Up"}</h2>
             <div className=" bg-zinc-800 rounded-md overflow-hidden">
               <div className="w-full h-60" ref={videoPlayerRef}></div>
-              {/*<LiteYouTubeEmbed 
+              {/*
+              <LiteYouTubeEmbed 
                 id= {getYoutubeVideoId(currentPlaying?.url ?? DEFAULT_PLAYING_URL)}
                 title="Random title"
-              />*/}
+              />
+              <div> */}
             </div>
           </div>
           
 
-          <div className="flex flex-row justify-center active:scale-95 hover:scale-95   bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-md text-sm">
+          <div className="flex flex-row justify-center active:scale-95 hover:scale-95 bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-md text-sm">
             <button 
               className="text-center flex flex-row justify-center gap-2  active:scale-95 transition-all duration-300 ease-in-out"
               onClick={() => handlePlayNext()}
@@ -541,6 +594,8 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
                 Play Next {<ArrowRightFromLine size={23}/>}
             </button>   
           </div>
+
+                 
             <div className="mt-6">
               { !likedTracks && <div className="text-center text-xs text-zinc-500">No liked songs yet</div> }
               { likedTracks && 

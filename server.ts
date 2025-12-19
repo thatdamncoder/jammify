@@ -22,6 +22,10 @@ io.on("connection", (socket) => {
       io.emit("updatedQueue", queue);
    });
 
+   socket.on("updateQueueOnShift", (queue) => {
+      io.emit("updatedQueueOnShift", queue);
+   });  
+
    socket.on("disconnect", () => {
       console.log("disconnected from server");
    });
