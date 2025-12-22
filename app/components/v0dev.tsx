@@ -16,6 +16,7 @@ import { useSocket } from "@/hooks/useSocket";
 import { useRouter } from "next/navigation";
 import AlertDialogPopUp from "./AlertDialog";
 import { Button } from "@/components/ui/button";
+import NowPlaying from "./NowPlaying";
 
 const DEFAULT_PLAYING_URL = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
 const DEFAULT_PLAYING_EXTRACTED_ID = "dQw4w9WgXcQ";
@@ -27,6 +28,7 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
   const [likedTracks, setLikedTracks] = useState<Video[] | null>(null);
   const [currentPlaying, setCurrentPlaying] = useState<Video | null>(null);
   const [addUrl, setAddUrl] = useState<string | null>(null);
+  const [addUrlPreviewImage, setAddUrlPreviewImage] = useState<string | null>(null);
   const [addSongMessage, setAddSongMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [hoveringOnTrack, setHoveringOnTrack] = useState<string | null>(null);
@@ -38,6 +40,8 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
   const playerRef = useRef<any>(null);
   const tracksRef = useRef(tracks);
   const socket = useSocket();
+  const socketRef = useRef(socket);
+  const playNextRef = useRef<() => void>(() => {});
   const router = useRouter();
   const sortQueue = (queue : Video[]) => {
     return [...queue].sort(customSortQueueComparator)
@@ -88,6 +92,20 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
     tracksRef.current = tracks;
   },[tracks]);
 
+  useEffect(() => {
+    socketRef.current = socket;
+  }, [socket]);
+  
+  useEffect(() => {
+    if (!addUrl || !isValidYoutubeURL(addUrl)){
+      setAddUrlPreviewImage(null);
+      return;
+    }
+    const extractedId = getYoutubeVideoId(addUrl);
+    const imageUrl = `https://img.youtube.com/vi/${extractedId}/hqdefault.jpg`;
+    setAddUrlPreviewImage(imageUrl);
+  }, [addUrl]);
+
 
   // useEffect(() => {
   //   if (!videoPlayerRef.current || !currentPlaying) {
@@ -114,33 +132,24 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
   // }, [currentPlaying, videoPlayerRef]);
   //create player ref only once to avoid race conditions
   useEffect(() => {
-  if (!videoPlayerRef.current || playerRef.current) return; // Don't re-init if exists
+    if (!videoPlayerRef.current || playerRef.current) return;
 
-  playerRef.current = YouTubePlayer(videoPlayerRef.current, {
-    playerVars: {
-      autoplay: 1,
-      controls: 1,
-    },
-  });
+    playerRef.current = YouTubePlayer(videoPlayerRef.current, {
+      playerVars: { autoplay: 1, controls: 1 },
+    });
 
-  const listener = playerRef.current.on('stateChange', (event: any) => {
-    // YouTube's 'Ended' state is 0
-    
-    if (event.data === 0) {
-      console.log("inside listener");
-      if (tracksRef.current && tracksRef.current.length > 0) {
-        handlePlayNext(); 
-      } else {
-        console.log("Ref queue was empty.");
+    playerRef.current.on("stateChange", (event: any) => {
+      if (event.data === 0) {
+        console.log("inside listener");
+        playNextRef.current();
       }
-    }
-  });
+    });
 
-  return () => {
-    // Clean up the listener and destroy player on unmount
-    playerRef.current?.destroy();
-  };
-}, []);
+    return () => {
+      playerRef.current?.destroy();
+    };
+  }, []);
+
 
   {/*for autoplaying the next video in the queue. load video when current playing changes*/}
   useEffect(() => {
@@ -236,7 +245,13 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
 
   
   const handlePlayNext = async () => {
-    if (!socket || !tracks || tracks.length === 0) return;
+    const socket = socketRef.current;
+    if (!socket || !tracks || tracks.length === 0) {
+      if(!socket) console.log("socket null");
+      else console.log("tracks are null");
+      return;
+    }
+    console.log("inside handle play next");
     const [nextVideo, ...restQueue] = tracks;
     
     socket.emit("updateQueueOnShift", restQueue);
@@ -245,14 +260,18 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
     setTracks(restQueue);
     setCurrentPlaying(nextVideo);
 
-    // await removeTrack(nextVideo.id); 
+    await removeTrack(nextVideo.id); 
   };
+
+  useEffect(() => {
+    playNextRef.current = handlePlayNext;
+  }, [handlePlayNext]);
 
   const addNewTrack = async (e : FormEvent) => {
     if (!socket) return;
     e.preventDefault();
     setLoading(true);
-    const newSongURL = addUrl ?? "";
+    const newSongURL = addUrl?? "";
     if (!isValidYoutubeURL(newSongURL)) {
       setAddSongMessage("Not a valid YouTube URL");
       setAddUrl("");
@@ -413,16 +432,17 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
 
           {/* youtube embed for preview*/}
           {
-            addUrl && isValidYoutubeURL(addUrl) && !loading &&
-            <div>
-              <div className="mt-3"><h4>Preview</h4></div>
-              <div className="w-100 aspect-video bg-zinc-800 rounded-md overflow-hidden">
-                <div className="bg-zinc-800 rounded-md overflow-hidden">
-                  <div
-                    ref={videoPlayerRef}
-                    className="w-full h-60"
-                  />
-                </div>
+            addUrl && isValidYoutubeURL(addUrl) && addUrlPreviewImage && !loading &&
+            <div className="my-3">
+              <h4 className="mb-2 text-sm text-zinc-400">Preview</h4>
+
+              <div className="relative w-100 aspect-video bg-zinc-800 rounded-lg overflow-hidden">
+                <Image
+                  src={addUrlPreviewImage}
+                  alt="preview image"
+                  fill
+                  className="object-cover"
+                />
               </div>
             </div>
           }
