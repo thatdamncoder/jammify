@@ -27,3 +27,10 @@ interface Space {
 interface Form {
     url: string;
 }
+
+type PlaybackState = {
+  videoId: string;
+  isPlaying: boolean;
+  startedAt: number; // Date.now() when play was pressed
+  pausedAt?: number; // seconds into video (when paused)
+};

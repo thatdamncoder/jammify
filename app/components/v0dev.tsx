@@ -12,7 +12,7 @@ import { getYoutubeVideoId, isValidYoutubeURL} from "@/lib/url";
 import Toast from "typescript-toastify";
 //@ts-ignore
 import YouTubePlayer from 'youtube-player';
-import { useSocket } from "@/hooks/useSocket";
+import { useSocket } from "@/contexts/socket-provider";
 import { useRouter } from "next/navigation";
 import AlertDialogPopUp from "./AlertDialog";
 import { Button } from "@/components/ui/button";
@@ -42,6 +42,7 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
   const socket = useSocket();
   const socketRef = useRef(socket);
   const playNextRef = useRef<() => void>(() => {});
+  const isRemoteActionRef = useRef(false);
   const router = useRouter();
   const sortQueue = (queue : Video[]) => {
     return [...queue].sort(customSortQueueComparator)
@@ -50,7 +51,7 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
   //socket
   useEffect(() => {
     if (!socket) return;
-    socket.on("upvoteChanged", ({id, count, upvoted}) => {
+    socketRef?.current?.on("upvoteChanged", ({id, count, upvoted}) => {
       setTracks((prev) => {
         if (!prev) return prev;
         const copy = prev.map((track) => {
@@ -60,25 +61,50 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
       });
     });
 
-    socket.on("changedCurrentPlayingVideo", (nextTrack) => {
-      setCurrentPlaying(nextTrack);
+    socketRef?.current?.on("changedCurrentPlayingVideo", (nextTrack) => {
+        setCurrentPlaying(nextTrack);
     });
 
-    socket.on("updatedQueue", (queue) => {
+    socketRef?.current?.on("updatedQueue", (queue) => {
       if (!queue) return queue;
-      setTracks(sortQueue(queue));
+        setTracks(sortQueue(queue));
     });
     
-    socket.on("updatedQueueOnShift", (queue) => {
+    socketRef?.current?.on("updatedQueueOnShift", (queue) => {
       setTracks(queue);
     });
 
-    console.log("socket inside upvote changed");
+    socketRef?.current?.on("syncPlayback", ({ videoId, isPlaying, time }) => {
+      if (!playerRef.current) return;
+
+      isRemoteActionRef.current = true;
+
+      if (videoId) {
+        playerRef.current.loadVideoById(videoId, time);
+      } else {
+        playerRef.current.seekTo(time, true);
+      }
+
+      if (isPlaying) {
+        playerRef.current.playVideo();
+      } else {
+        console.log("inside socket pauseVideo");
+        playerRef.current.pauseVideo();
+      }
+
+      // Reset flag AFTER player reacts
+      setTimeout(() => {
+        isRemoteActionRef.current = false;
+      }, 300);
+    });
+
+    
     return () => {
-      socket.off("upvoteChanged");
-      socket.off("changedCurrentPlayingVideo");
-      socket.off("updatedQueueOnShift");
-      socket.off("updatedQueue");
+      socketRef?.current?.off("upvoteChanged");
+      socketRef?.current?.off("changedCurrentPlayingVideo");
+      socketRef?.current?.off("updatedQueueOnShift");
+      socketRef?.current?.off("updatedQueue");
+      socketRef?.current?.off("syncPlayback");
     }
   }, [socket]);
 
@@ -138,12 +164,38 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
       playerVars: { autoplay: 1, controls: 1 },
     });
 
-    playerRef.current.on("stateChange", (event: any) => {
+    playerRef.current.on("stateChange", async (event: any) => {
+      // Video ended
       if (event.data === 0) {
-        console.log("inside listener");
         playNextRef.current();
+        return;
+      }
+
+      // Ignore state changes caused by server sync
+      if (isRemoteActionRef.current) return;
+
+      const time = await playerRef.current.getCurrentTime();
+
+      if (event.data === 1) {
+        // User clicked play in YouTube controls
+        // if(!socket) return;
+        console.log("video played");
+        socketRef?.current?.emit("play", {
+          videoId: currentPlaying?.extractedId,
+          currentTime: time,
+        });
+      }
+
+      if (event.data === 2) {
+        // User clicked pause in YouTube controls
+        console.log("video paused");
+        // if(!socket) return;
+        socketRef?.current?.emit("pause", {
+          currentTime: time,
+        });
       }
     });
+
 
     return () => {
       playerRef.current?.destroy();
@@ -153,7 +205,11 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
 
   {/*for autoplaying the next video in the queue. load video when current playing changes*/}
   useEffect(() => {
-    if(!playerRef.current) return;
+    if(!playerRef?.current) {
+      console.log("returned from useeffect since playerRef.current is null");
+      return;
+    }
+    console.log("playerref" , playerRef.current);
 
     // 'loadVideoById' is queued until the player is ready to receive API calls.
     playerRef.current.loadVideoById(currentPlaying?.extractedId || DEFAULT_PLAYING_EXTRACTED_ID);
@@ -162,6 +218,7 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
     playerRef.current.playVideo();
 
   },[currentPlaying]);
+
 
 
   async function refreshStreams() {
@@ -216,7 +273,7 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
     const isAlreadyLiked = tracks[likedTrackIndex].hasUpvoted;
     // console.log("inside handleupvote, upvote received for ", id," with index ",likedTrackIndex);
     // console.log("isalreadyliked for current upvoted ", isAlreadyLiked);
-    socket.emit("upvoteChange", {id, count: currentCount + 1, upvoted: !isAlreadyLiked});
+    socketRef?.current?.emit("upvoteChange", {id, count: currentCount + 1, upvoted: !isAlreadyLiked});
     console.log("working till here in handleupvote");
     const res = await fetch("/api/streams/upvote", {
       method: "POST",
@@ -235,7 +292,7 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
     // const isAlreadyLiked = tracks[likedTrackIndex].hasUpvoted;
     // console.log("inside handleupvote, upvote received for ", id," with index ",likedTrackIndex);
     // console.log("isalreadyliked for current upvoted ", isAlreadyLiked);
-    socket.emit("upvoteChange", {id, count: currentCount - 1});
+    socketRef?.current?.emit("upvoteChange", {id, count: currentCount - 1});
     console.log("working till here in handleupvote");
     const res = await fetch("/api/streams/downvote", {
       method: "POST",
@@ -254,8 +311,8 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
     console.log("inside handle play next");
     const [nextVideo, ...restQueue] = tracks;
     
-    socket.emit("updateQueueOnShift", restQueue);
-    socket.emit("changeCurrentPlaying", nextVideo);
+    socketRef?.current?.emit("updateQueueOnShift", restQueue);
+    socketRef?.current?.emit("changeCurrentPlaying", nextVideo);
     
     setTracks(restQueue);
     setCurrentPlaying(nextVideo);
@@ -268,8 +325,11 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
   }, [handlePlayNext]);
 
   const addNewTrack = async (e : FormEvent) => {
-    if (!socket) return;
     e.preventDefault();
+    if (!socket) {
+      console.log("socket is null");
+      return;
+    }
     setLoading(true);
     const newSongURL = addUrl?? "";
     if (!isValidYoutubeURL(newSongURL)) {
@@ -299,7 +359,7 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
     const updated = tracks ? [...tracks, newStream] : [newStream];
     const sorted = sortQueue(updated);
     setTracks(sorted);
-    socket.emit("updateQueue", sorted);
+    socketRef?.current?.emit("updateQueue", sorted);
 
     setAddSongMessage("Track added!");
     setAddUrl("");
@@ -344,7 +404,7 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
     });
     if (res.ok) {
       const copy = tracks?.filter((track) => track.id !== id);
-      socket.emit("updateQueue", copy);
+      socketRef?.current?.emit("updateQueue", copy);
     }
   }
 
@@ -358,7 +418,7 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
       })
     });
     if(res.ok) {
-      socket.emit("updateQueue", []);
+      socketRef?.current?.emit("updateQueue", []);
     }
   }
 
@@ -373,6 +433,24 @@ export default function MusicApp({spaceId}: {spaceId:string}) {
     }
     router.push("/creator/dashboard");
   }
+
+  const handlePlay = async () => {
+    if (!socket || !currentPlaying) return;
+    const time = await playerRef.current.getCurrentTime();
+
+    socketRef?.current?.emit("play", {
+      videoId: currentPlaying.extractedId,
+      currentTime: time,
+    });
+  };
+
+  const handlePause = async () => {
+    if (!socket) return;
+    const time = await playerRef.current.getCurrentTime();
+    socketRef?.current?.emit("pause", { currentTime: time });
+  };
+
+
 
 
   return (
