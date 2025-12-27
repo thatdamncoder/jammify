@@ -1,36 +1,59 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🎵 Real-Time Collaborative Music Queue
 
-## Getting Started
+A real-time collaborative music queue where multiple users can add YouTube videos to a shared playlist, upvote tracks, and listen together.
 
-First, run the development server:
+Each space acts as an isolated room — actions in one space never affect another.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## ✨ Features
+
+* ➕ **Add songs** to a shared playlist using YouTube links
+* 👍 **Upvote tracks** to reorder the queue dynamically
+* ▶️ **Auto-play next track** when the current one ends
+* 🧑‍🤝‍🧑 **Multi-user support** with isolated spaces (rooms)
+* 🔄 **Real-time sync across users (play, pause, seek)** *(under progress)*
+
+---
+
+## 🧠 How it works (high level)
+
+* Built with **Next.js**
+* **Socket.IO** powers real-time communication
+* Each space has:
+
+  * Its own playback state
+  * Its own queue
+  * Its own connected users
+* The server maintains the authoritative playback state per space and syncs it to all users.
+
+---
+
+## 🎥 Demo Video
+
+📽️ **Sample Demo:**
+
+> The demo shows:
+>
+> * Adding videos to the playlist
+> * Upvoting tracks to reorder the queue
+> * Automatic playback of the next song when the current one ends
+
+🔗 *Demo video link:*
+
+```
+https://drive.google.com/file/d/1_cbDY2-AUzXwV-ehdfPcoAqJAtGR9KTO/view?usp=sharing
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🚧 Status
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+This project is actively being developed.
 
-## Learn More
+Planned improvements:
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+* Finalizing reliable real-time playback sync
+* Better late-join user synchronization
+* Host / moderator controls
+* UI & UX refinements
